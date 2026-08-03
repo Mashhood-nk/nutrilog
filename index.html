@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriLog 🥗</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#0e0f0e;--surface:#161714;--card:#1c1e1b;--border:#2a2c28;--accent:#b5f23d;--accent2:#3dffa0;--accent3:#ffd93d;--text:#e8ead4;--muted:#6b6e60;--danger:#ff6b6b;--radius:14px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;padding:20px 14px 60px;max-width:520px;margin:0 auto;}
+header{text-align:center;margin-bottom:22px;padding-top:8px;}
+header h1{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-1px;color:var(--accent);}
+header p{color:var(--muted);font-size:0.72rem;margin-top:3px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+.card-title{font-family:'Syne',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+input[type=text],input[type=password],input[type=date],input[type=number],textarea,select{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.78rem;padding:10px 12px;width:100%;outline:none;transition:border-color .2s;}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+select option{background:var(--card);}
+textarea{resize:vertical;min-height:100px;line-height:1.6;}
+.btn{font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;border:none;border-radius:8px;padding:12px 18px;cursor:pointer;transition:opacity .15s,transform .1s;width:100%;margin-top:10px;}
+.btn:active{transform:scale(.98);}.btn:disabled{opacity:.38;cursor:not-allowed;}
+.btn-primary{background:var(--accent);color:#0e0f0e;}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border);}
+.btn-save{background:var(--accent2);color:#0e0f0e;}
+.btn-danger{background:#2a0e0e;color:var(--danger);border:1px solid #4a1e1e;}
+.btn-coach{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;}
+.btn-admin{background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;}
+.btn-sm{padding:6px 12px;font-size:0.7rem;width:auto;margin-top:0;}
+.btn-row{display:flex;gap:8px;margin-top:10px;}.btn-row .btn{flex:1;margin-top:0;}
+.status{font-size:0.7rem;padding:9px 12px;border-radius:8px;margin-top:10px;display:none;line-height:1.5;}
+.status.info{background:#1a2a0e;color:var(--accent);border:1px solid #3a4a1e;display:block;}
+.status.error{background:#2a0e0e;color:var(--danger);border:1px solid #4a1e1e;display:block;}
+.status.success{background:#0e2a1e;color:var(--accent2);border:1px solid #1e4a2e;display:block;}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid #0e0f0e;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:5px;}
+.spinner-white{border-color:#fff;border-top-color:transparent;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.hidden{display:none!important;}
+#loginScreen{min-height:55vh;display:flex;flex-direction:column;justify-content:center;}
+#loginScreen h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:6px;}
+#loginScreen p{font-size:0.73rem;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+.meal-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;}
+.meal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.meal-time{font-size:0.65rem;color:var(--muted);}
+.meal-food{font-size:0.78rem;color:var(--text);margin-bottom:6px;line-height:1.4;}
+.meal-macros{display:flex;gap:6px;flex-wrap:wrap;}
+.macro-chip{font-size:0.62rem;padding:2px 7px;border-radius:20px;background:var(--card);border:1px solid var(--border);}
+.macro-chip.cal{color:var(--accent);}.macro-chip.pro{color:var(--accent2);}.macro-chip.car{color:var(--accent3);}.macro-chip.fat{color:#ff9f5a;}.macro-chip.fib{color:#a78bfa;}
+.totals-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;}
+.totals-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.total-item{text-align:center;}
+.total-label{font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
+.total-val{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--accent);}
+.total-val.p{color:var(--accent2);}.total-val.c{color:var(--accent3);}.total-val.f{color:#ff9f5a;}.total-val.fi{color:#a78bfa;}
+.manual-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.manual-item label{display:block;font-size:0.62rem;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;}
+.wa-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:0.8rem;line-height:1.9;white-space:pre-line;margin-bottom:10px;color:var(--text);}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.user-chip{font-size:0.68rem;background:#1a2a0e;color:var(--accent);border:1px solid #3a4a1e;border-radius:20px;padding:3px 10px;}
+.admin-chip{font-size:0.68rem;background:#2a0a2a;color:#f093fb;border:1px solid #4a1a4a;border-radius:20px;padding:3px 10px;}
+.logout-btn{font-size:0.68rem;color:var(--muted);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:'DM Mono',monospace;}
+.date-label{display:block;font-size:0.62rem;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;}
+.tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--surface);border-radius:10px;padding:4px;}
+.tab{flex:1;font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;padding:8px 4px;border:none;border-radius:7px;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;}
+.tab.active{background:var(--card);color:var(--text);}
+.img-upload{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:10px;}
+.img-upload:hover{border-color:var(--accent);}
+.img-upload p{font-size:0.73rem;color:var(--muted);}
+.img-preview{width:100%;border-radius:8px;margin-bottom:10px;max-height:200px;object-fit:cover;}
+.coach-response{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:0.78rem;line-height:1.8;color:var(--text);white-space:pre-wrap;}
+.nav{display:flex;gap:3px;background:var(--surface);border-radius:12px;padding:4px;margin-bottom:16px;}
+.nav-btn{flex:1;font-family:'Syne',sans-serif;font-size:0.58rem;font-weight:700;padding:8px 2px;border:none;border-radius:8px;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;letter-spacing:.3px;}
+.nav-btn.active{background:var(--accent);color:#0e0f0e;}
+.nav-btn.admin-nav{color:#f093fb;}
+.nav-btn.admin-nav.active{background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.form-item label{display:block;font-size:0.62rem;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;}
+.profile-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
+.profile-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.75rem;}
+.profile-row:last-child{border-bottom:none;}
+.profile-label{color:var(--muted);}
+.profile-val{color:var(--text);font-weight:500;}
+.user-row{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.user-info{font-size:0.75rem;}
+.user-name{font-weight:700;color:var(--text);}
+.user-code{font-size:0.65rem;color:var(--muted);}
+.user-status-active{font-size:0.62rem;color:var(--accent2);}
+.user-status-inactive{font-size:0.62rem;color:var(--danger);}
+.api-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+.api-btn{font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;padding:10px 6px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface);color:var(--text);transition:all .2s;}
+.api-btn.active{background:var(--accent);color:#0e0f0e;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<header><h1>NutriLog 🥗</h1><p>AI-powered daily nutrition tracker</p></header>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="card hidden">
+  <div class="card-title">🔐 Access Required</div>
+  <h2>Enter your access code</h2>
+  <p>One time only. Ask Mashhood for your personal code.</p>
+  <input type="password" id="accessCodeInput" placeholder="Your access code..." />
+  <div id="loginStatus" class="status"></div>
+  <button class="btn btn-primary" onclick="login()">Unlock App</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="hidden">
+  <div class="topbar">
+    <span id="userChip" class="user-chip">👤</span>
+    <button class="logout-btn" onclick="toggleSettings()">⚙️ Settings</button>
+  </div>
+
+  <!-- Settings -->
+  <div class="card hidden" id="settingsCard">
+    <div class="card-title">⚙️ Settings</div>
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:14px;">Logged in as <strong style="color:var(--accent)" id="settingsUserName"></strong></div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:0.62rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">🤖 AI Provider</label>
+      <div class="api-grid">
+        <button onclick="setAPI('openai')" id="api-openai" class="api-btn">🟢 OpenAI</button>
+        <button onclick="setAPI('claude')" id="api-claude" class="api-btn">🟠 Claude</button>
+        <button onclick="setAPI('gemini')" id="api-gemini" class="api-btn">🔵 Gemini</button>
+      </div>
+      <div style="font-size:0.65rem;color:var(--muted);margin-top:6px;" id="apiNote"></div>
+    </div>
+    <button class="btn btn-danger" style="margin-top:0;" onclick="logout()">🚪 Log out</button>
+  </div>
+
+  <!-- Nav -->
+  <div class="nav" id="mainNav">
+    <button class="nav-btn active" onclick="showPage('log')" id="nav-log">📋 LOG</button>
+    <button class="nav-btn" onclick="showPage('weight')" id="nav-weight">📉 WEIGHT</button>
+    <button class="nav-btn" onclick="showPage('coach')" id="nav-coach">🧠 COACH</button>
+    <button class="nav-btn" onclick="showPage('profile')" id="nav-profile">👤 PROFILE</button>
+    <button class="nav-btn" onclick="showPage('export')" id="nav-export">📥 EXPORT</button>
+    <button class="nav-btn admin-nav hidden" onclick="showPage('admin')" id="nav-admin">🔧 ADMIN</button>
+  </div>
+
+  <!-- PAGE: LOG -->
+  <div id="page-log">
+    <div class="card">
+      <label class="date-label">📅 Date</label>
+      <input type="date" id="logDate" onchange="loadToday()" />
+    </div>
+    <div class="card">
+      <div class="card-title">🍽️ Today's Meals</div>
+      <div id="totalsBar" class="totals-bar hidden">
+        <div class="totals-grid">
+          <div class="total-item"><div class="total-label">Calories</div><div class="total-val" id="tCal">0</div></div>
+          <div class="total-item"><div class="total-label">Protein</div><div class="total-val p" id="tProt">0g</div></div>
+          <div class="total-item"><div class="total-label">Carbs</div><div class="total-val c" id="tCarb">0g</div></div>
+          <div class="total-item"><div class="total-label">Fat</div><div class="total-val f" id="tFat">0g</div></div>
+          <div class="total-item"><div class="total-label">Fibre</div><div class="total-val fi" id="tFibre">0g</div></div>
+        </div>
+      </div>
+      <div id="mealsList"></div>
+      <div id="loadStatus" class="status"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">➕ Add Meal</div>
+      <div class="tabs">
+        <button class="tab active" onclick="setMode('text')" id="tab-text">✏️ Type</button>
+        <button class="tab" onclick="setMode('image')" id="tab-image">📷 Photo</button>
+      </div>
+
+      <!-- Text mode -->
+      <div id="modeText">
+        <textarea id="foodInput" placeholder="Type your meal — one item or multiple:
+125g boiled rice
+100g boiled potato
+70g air fried chicken
+
+Or all on one line — we handle it!"></textarea>
+        <div id="foodItemsList" class="hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;">
+          <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">✅ Items detected:</div>
+          <div id="foodItemsDisplay"></div>
+        </div>
+      </div>
+
+      <!-- Image mode -->
+      <div id="modeImage" class="hidden">
+        <div class="img-upload" onclick="document.getElementById('imgFile').click()">
+          <p>📷 Tap to take photo or choose from gallery</p>
+        </div>
+        <input type="file" id="imgFile" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelect(event)" />
+        <img id="imgPreview" class="img-preview hidden" />
+        <input type="text" id="imgNote" placeholder="Optional: add notes (e.g. extra oil, portion size)" style="margin-top:8px;" />
+      </div>
+
+      <div id="analyseStatus" class="status"></div>
+      <div id="nutritionPreview" class="hidden" style="margin-top:12px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px;" id="previewFoodName"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="macro-chip cal" id="pCal"></span>
+            <span class="macro-chip pro" id="pProt"></span>
+            <span class="macro-chip car" id="pCarb"></span>
+            <span class="macro-chip fat" id="pFat"></span>
+            <span class="macro-chip fib" id="pFibre"></span>
+          </div>
+        </div>
+        <button class="btn btn-save" style="margin-top:0" onclick="logMeal()">✅ Log This Meal</button>
+      </div>
+      <div id="logStatus" class="status"></div>
+      <button class="btn btn-primary" id="analyseBtn" onclick="analyseFood()">🔍 Analyse Nutrition</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Save Daily Summary</div>
+      <div class="manual-grid">
+        <div class="manual-item"><label>⚖️ Weight (kg)</label><input type="text" id="weight" placeholder="70.5" /></div>
+        <div class="manual-item"><label>👣 Steps</label><input type="text" id="steps" placeholder="8000" /></div>
+        <div class="manual-item"><label>💧 Water (L)</label><input type="text" id="water" placeholder="2.5" /></div>
+      </div>
+      <div id="saveStatus" class="status"></div>
+      <button class="btn btn-save" id="saveBtn" onclick="saveSummary()">📤 Save Daily Summary</button>
+    </div>
+    <div class="card hidden" id="waCard">
+      <div class="card-title">📱 WhatsApp Summary</div>
+      <div class="wa-box" id="waText"></div>
+      <button class="btn btn-secondary" onclick="copyWA()">📋 Copy & Paste in WhatsApp</button>
+      <div id="copyStatus" class="status"></div>
+    </div>
+  </div>
+
+  <!-- PAGE: WEIGHT -->
+  <div id="page-weight" class="hidden">
+    <div class="card">
+      <div class="card-title">📉 Weight Over Time</div>
+      <div id="weightChart" style="width:100%;height:300px;"></div>
+      <div id="weightStats" style="margin-top:8px;"></div>
+      <div id="weightStatus" class="status"></div>
+    </div>
+  </div>
+
+  <!-- PAGE: COACH -->
+  <div id="page-coach" class="hidden">
+    <div class="card">
+      <div class="card-title">🧠 AI Health Coach</div>
+      <div id="profileSummaryForCoach" style="margin-bottom:14px;"></div>
+      <p style="font-size:0.73rem;color:var(--muted);margin-bottom:14px;line-height:1.6;">Your AI coach analyses your full history and profile to give personalised advice.</p>
+      <button class="btn btn-coach" id="coachBtn" onclick="getCoachAdvice()">✨ Analyse My Data</button>
+      <div id="coachStatus" class="status"></div>
+      <div id="coachResponse" class="coach-response hidden" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <!-- PAGE: PROFILE -->
+  <div id="page-profile" class="hidden">
+    <div class="card">
+      <div class="card-title">👤 My Profile</div>
+      <div id="profileView" class="hidden">
+        <div class="profile-card" id="profileDisplay"></div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="showProfileForm(true)">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" style="flex:1;margin-top:0;" onclick="deleteProfile()">🗑 Delete</button>
+        </div>
+      </div>
+      <div id="profileForm">
+        <div class="form-grid">
+          <div class="form-item"><label>Age</label><input type="number" id="p_age" placeholder="28" /></div>
+          <div class="form-item"><label>Gender</label>
+            <select id="p_gender">
+              <option value="">Select...</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-item"><label>Height (cm)</label><input type="number" id="p_height" placeholder="175" /></div>
+          <div class="form-item"><label>Target Weight (kg)</label><input type="number" id="p_target" placeholder="70" /></div>
+        </div>
+        <div class="form-item" style="margin-bottom:10px;">
+          <label>Goal</label>
+          <select id="p_goal">
+            <option value="">Select...</option>
+            <option value="Lose weight">Lose weight</option>
+            <option value="Gain muscle">Gain muscle</option>
+            <option value="Maintain weight">Maintain weight</option>
+            <option value="Improve health">Improve health</option>
+            <option value="Gain weight">Gain weight</option>
+          </select>
+        </div>
+        <div class="form-item" style="margin-bottom:10px;">
+          <label>Activity Level</label>
+          <select id="p_activity">
+            <option value="">Select...</option>
+            <option value="Sedentary">Sedentary (desk job, little exercise)</option>
+            <option value="Lightly active">Lightly active (light exercise 1-3x/week)</option>
+            <option value="Moderately active">Moderately active (exercise 3-5x/week)</option>
+            <option value="Very active">Very active (hard exercise 6-7x/week)</option>
+          </select>
+        </div>
+        <div class="form-item" style="margin-bottom:10px;">
+          <label>Location</label>
+          <select id="p_location">
+            <option value="">Select...</option>
+            <option value="Qatar">Qatar</option>
+            <option value="Delhi, India">Delhi, India</option>
+            <option value="Jeddah, Saudi Arabia">Jeddah, Saudi Arabia</option>
+            <option value="Kerala, India">Kerala, India</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-item" style="margin-bottom:12px;">
+          <label>Notes (health conditions, diet preferences, etc.)</label>
+          <textarea id="p_notes" placeholder="e.g. I do gym 3x/week, I'm diabetic, I prefer Kerala food..." style="min-height:70px;"></textarea>
+        </div>
+        <div id="profileStatus" class="status"></div>
+        <div class="btn-row">
+          <button class="btn btn-save" onclick="saveProfile()">💾 Save Profile</button>
+          <button class="btn btn-secondary" id="cancelProfileBtn" onclick="showProfileForm(false)" style="display:none;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: EXPORT -->
+  <div id="page-export" class="hidden">
+    <div class="card">
+      <div class="card-title">📥 Export Data</div>
+      <p style="font-size:0.73rem;color:var(--muted);margin-bottom:14px;line-height:1.6;">Download all your nutrition data as an Excel file.</p>
+      <button class="btn btn-secondary" onclick="exportData()">📊 Download Excel (.xlsx)</button>
+      <div id="exportStatus" class="status"></div>
+    </div>
+  </div>
+
+  <!-- PAGE: ADMIN -->
+  <div id="page-admin" class="hidden">
+    <div class="card">
+      <div class="card-title">🔧 Admin Panel</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:14px;">Manage users and app settings.</div>
+
+      <!-- Add user -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:0.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">➕ Add New User</div>
+        <div class="form-grid" style="margin-bottom:8px;">
+          <div class="form-item"><label>Name</label><input type="text" id="admin_name" placeholder="Fiza" /></div>
+          <div class="form-item"><label>Access Code</label><input type="text" id="admin_code" placeholder="fiza123" /></div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:0;" onclick="adminAddUser()">Add User</button>
+        <div id="adminAddStatus" class="status"></div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
+
+      <!-- User list -->
+      <div style="font-size:0.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">👥 All Users</div>
+      <div id="adminUserList"><div style="font-size:0.73rem;color:var(--muted);">Loading...</div></div>
+      <button class="btn btn-secondary" style="margin-top:8px;" onclick="loadAdminUsers()">🔄 Refresh</button>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
+
+      <!-- Danger zone -->
+      <div style="font-size:0.68rem;color:var(--danger);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">⚠️ Danger Zone</div>
+      <button class="btn btn-danger" onclick="adminWipeDb()">🗑 Wipe All Meal Data</button>
+      <div id="adminWipeStatus" class="status"></div>
+    </div>
+  </div>
+
+</div><!-- /mainApp -->
+
+<script>
+const WORKER = 'https://nutrilog-worker.mashhoodbinmoideen.workers.dev';
+const CODE_KEY = 'nl_code';
+let userCode=null, userName=null, isAdmin=false, lastNutrition=null, lastFoodDesc=null;
+let todayMeals=[], currentMode='text', selectedImage=null, preferredAPI='openai';
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  document.getElementById('logDate').value = todayStr();
+  preferredAPI = localStorage.getItem('nl_api') || 'openai';
+  const saved = localStorage.getItem(CODE_KEY);
+  if (saved) { userCode=saved; verifyCode(); }
+  else showLogin();
+};
+
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+function fmtDate(s){ const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; }
+function nowTime(){ return new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showPage(page) {
+  ['log','weight','coach','profile','export','admin'].forEach(p => {
+    const el = document.getElementById('page-'+p);
+    const btn = document.getElementById('nav-'+p);
+    if(el) el.classList.add('hidden');
+    if(btn) btn.classList.remove('active');
+  });
+  document.getElementById('page-'+page).classList.remove('hidden');
+  document.getElementById('nav-'+page).classList.add('active');
+  if (page === 'weight') { document.getElementById('weightChart').innerHTML=''; document.getElementById('weightStats').innerHTML=''; loadWeightChart(); }
+  if (page === 'coach') loadProfileSummary();
+  if (page === 'profile') loadProfile();
+  if (page === 'admin') loadAdminUsers();
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+function showLogin(){ document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('mainApp').classList.add('hidden'); }
+
+function showApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  const chip = document.getElementById('userChip');
+  chip.textContent = isAdmin ? `🔧 Admin` : `👤 ${userName}`;
+  chip.className = isAdmin ? 'admin-chip' : 'user-chip';
+  const sn = document.getElementById('settingsUserName');
+  if(sn) sn.textContent = userName;
+  if(isAdmin) document.getElementById('nav-admin').classList.remove('hidden');
+  updateAPIButtons();
+  loadToday();
+}
+
+async function verifyCode() {
+  try {
+    const res = await fetch(WORKER+'/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:userCode})});
+    const d = await res.json();
+    if (d.ok){ userName=d.user; isAdmin=d.is_admin||false; showApp(); }
+    else { localStorage.removeItem(CODE_KEY); showLogin(); }
+  } catch { userName='?'; showApp(); }
+}
+
+async function login() {
+  const code = document.getElementById('accessCodeInput').value.trim();
+  if (!code) return showStatus('loginStatus','Enter your access code.','error');
+  showStatus('loginStatus','Verifying...','info');
+  try {
+    const res = await fetch(WORKER+'/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+    const d = await res.json();
+    if (d.ok){ localStorage.setItem(CODE_KEY,code); userCode=code; userName=d.user; isAdmin=d.is_admin||false; showApp(); }
+    else showStatus('loginStatus','Invalid code. Ask Mashhood for access.','error');
+  } catch(e){ showStatus('loginStatus','Cannot reach server: '+e.message,'error'); }
+}
+
+function logout(){ localStorage.removeItem(CODE_KEY); userCode=null; userName=null; isAdmin=false; showLogin(); }
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function toggleSettings(){ document.getElementById('settingsCard').classList.toggle('hidden'); updateAPIButtons(); }
+
+function setAPI(api){ preferredAPI=api; localStorage.setItem('nl_api',api); updateAPIButtons(); }
+
+function updateAPIButtons() {
+  const notes = { openai:'GPT-5.4-mini (simple) → GPT-5.4 (vague/photos)', claude:'Haiku (simple) → Sonnet (vague/photos)', gemini:'Gemini 2.0 Flash' };
+  ['openai','claude','gemini'].forEach(a => {
+    const btn = document.getElementById('api-'+a);
+    if(!btn) return;
+    btn.classList.toggle('active', a === preferredAPI);
+  });
+  const note = document.getElementById('apiNote');
+  if(note) note.textContent = notes[preferredAPI]||'';
+}
+
+// ── Food item builder ────────────────────────────────────────────────────────
+function addFoodItem() {
+  const input = document.getElementById('foodItemInput');
+  const val = input.value.trim();
+  if (!val) return;
+  foodItems.push(val);
+  input.value = '';
+  input.focus();
+  renderFoodItems();
+}
+
+function renderFoodItems() {
+  const list = document.getElementById('foodItemsList');
+  const display = document.getElementById('foodItemsDisplay');
+  if (!foodItems.length) { list.classList.add('hidden'); return; }
+  list.classList.remove('hidden');
+  display.innerHTML = foodItems.map((item, i) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.75rem;">
+      <span><span style="color:var(--muted);margin-right:6px;">${i+1}.</span>${item}</span>
+      <button onclick="removeFoodItem(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.72rem;padding:0 4px;">✕</button>
+    </div>`).join('');
+}
+
+function removeFoodItem(i) {
+  foodItems.splice(i, 1);
+  renderFoodItems();
+  document.getElementById('nutritionPreview').classList.add('hidden');
+}
+
+function clearFoodItems() {
+  foodItems = [];
+  renderFoodItems();
+  document.getElementById('nutritionPreview').classList.add('hidden');
+}
+
+// ── Mode ──────────────────────────────────────────────────────────────────────
+function setMode(mode) {
+  currentMode=mode;
+  document.getElementById('modeText').classList.toggle('hidden', mode!=='text');
+  document.getElementById('modeImage').classList.toggle('hidden', mode!=='image');
+  document.getElementById('tab-text').classList.toggle('active', mode==='text');
+  document.getElementById('tab-image').classList.toggle('active', mode==='image');
+  document.getElementById('nutritionPreview').classList.add('hidden');
+  if(mode==='text') setTimeout(()=>document.getElementById('foodItemInput').focus(), 100);
+}
+
+function handleImageSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    selectedImage = { base64: ev.target.result.split(',')[1], type: file.type };
+    const preview = document.getElementById('imgPreview');
+    preview.src = ev.target.result;
+    preview.classList.remove('hidden');
+    document.querySelector('.img-upload p').textContent = '✅ Image selected — tap Analyse';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Load today ────────────────────────────────────────────────────────────────
+async function loadToday() {
+  const date = fmtDate(document.getElementById('logDate').value);
+  showStatus('loadStatus','Loading...','info');
+  try {
+    const res = await fetch(WORKER+'/get-today',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({date})});
+    const d = await res.json();
+    if (!d.ok) throw new Error(d.error);
+    todayMeals=d.meals; renderMeals(); hideStatus('loadStatus');
+  } catch(e){ showStatus('loadStatus','Error: '+e.message,'error'); }
+}
+
+function renderMeals() {
+  const list=document.getElementById('mealsList'), bar=document.getElementById('totalsBar');
+  if (!todayMeals.length){ list.innerHTML='<div style="font-size:0.73rem;color:var(--muted);text-align:center;padding:12px 0;">No meals logged yet.</div>'; bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  const t=todayMeals.reduce((a,m)=>({calories:a.calories+m.calories,protein:a.protein+m.protein,carbs:a.carbs+m.carbs,fat:a.fat+m.fat,fibre:a.fibre+m.fibre}),{calories:0,protein:0,carbs:0,fat:0,fibre:0});
+  document.getElementById('tCal').textContent=Math.round(t.calories)+' kcal';
+  document.getElementById('tProt').textContent=Math.round(t.protein)+'g';
+  document.getElementById('tCarb').textContent=Math.round(t.carbs)+'g';
+  document.getElementById('tFat').textContent=Math.round(t.fat)+'g';
+  document.getElementById('tFibre').textContent=Math.round(t.fibre)+'g';
+  list.innerHTML=todayMeals.map(m=>`
+    <div class="meal-item">
+      <div class="meal-header"><span class="meal-time">🕐 ${m.time}</span><button class="btn btn-danger btn-sm" onclick="deleteMeal(${m.id})">🗑</button></div>
+      <div class="meal-food">${m.food}</div>
+      <div class="meal-macros">
+        <span class="macro-chip cal">🔥 ${m.calories}</span><span class="macro-chip pro">💪 ${m.protein}g</span>
+        <span class="macro-chip car">🍚 ${m.carbs}g</span><span class="macro-chip fat">🧈 ${m.fat}g</span>
+        <span class="macro-chip fib">🌿 ${m.fibre}g</span>
+      </div>
+    </div>`).join('');
+}
+
+// ── Analyse ───────────────────────────────────────────────────────────────────
+async function analyseFood() {
+  const btn=document.getElementById('analyseBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Analysing...';
+  showStatus('analyseStatus','Estimating with AI...','info');
+  let body;
+  if (currentMode==='image') {
+    if (!selectedImage){ showStatus('analyseStatus','Select an image first.','error'); btn.disabled=false; btn.innerHTML='🔍 Analyse Nutrition'; return; }
+    body={imageBase64:selectedImage.base64,imageType:selectedImage.type,food:document.getElementById('imgNote').value.trim(),preferred_api:preferredAPI};
+  } else {
+    const rawFood = document.getElementById('foodInput').value.trim();
+    if (!rawFood){ showStatus('analyseStatus','Enter what you ate.','error'); btn.disabled=false; btn.innerHTML='🔍 Analyse Nutrition'; return; }
+
+    // Split by newlines or commas — simple browser-side splitting, no API needed
+    let items = rawFood.split(/\n|,/).map(s=>s.trim()).filter(s=>s.length>0);
+    if (!items.length) items = [rawFood];
+
+    // Show detected items
+    const listEl = document.getElementById('foodItemsList');
+    const displayEl = document.getElementById('foodItemsDisplay');
+    if (items.length > 1) {
+      listEl.classList.remove('hidden');
+      displayEl.innerHTML = items.map((item,i)=>`<div style="padding:3px 0;font-size:0.75rem;border-bottom:1px solid var(--border);"><span style="color:var(--muted);margin-right:6px;">${i+1}.</span>${item}</div>`).join('');
+    }
+
+    const formattedFood = items.map((item,i) => `${i+1}. ${item}`).join('\n');
+    body={food:formattedFood,preferred_api:preferredAPI};
+  }
+  try {
+    const res=await fetch(WORKER+'/analyse',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify(body)});
+    const d=await res.json();
+    if (!d.ok) throw new Error(d.error);
+    lastNutrition=d.nutrition; lastFoodDesc=d.nutrition.food_description||body.food||'Meal from photo';
+    const n=lastNutrition;
+    let badge='⚡ AI';
+    if(d.model_used){
+      if(d.model_used.includes('gpt-5.4-mini')) badge='⚡ GPT-5.4-mini';
+      else if(d.model_used.includes('gpt-5.4')) badge='🧠 GPT-5.4';
+      else if(d.model_used.includes('sonnet')) badge='🧠 Sonnet';
+      else if(d.model_used.includes('haiku')) badge='⚡ Haiku';
+      else if(d.model_used.includes('gemini')) badge='🔵 Gemini';
+    }
+    document.getElementById('previewFoodName').innerHTML=`🍴 ${lastFoodDesc} <span style="font-size:0.6rem;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2px 7px;color:var(--muted);margin-left:4px;">${badge}</span>`;
+    document.getElementById('pCal').textContent=`🔥 ${n.calories} kcal`;
+    document.getElementById('pProt').textContent=`💪 ${n.protein}g`;
+    document.getElementById('pCarb').textContent=`🍚 ${n.carbs}g`;
+    document.getElementById('pFat').textContent=`🧈 ${n.fat}g`;
+    document.getElementById('pFibre').textContent=`🌿 ${n.fibre}g`;
+    document.getElementById('nutritionPreview').classList.remove('hidden');
+    hideStatus('analyseStatus');
+  } catch(e){ showStatus('analyseStatus','Error: '+e.message,'error'); }
+  btn.disabled=false; btn.innerHTML='🔍 Analyse Nutrition';
+}
+
+// ── Log meal ──────────────────────────────────────────────────────────────────
+async function logMeal() {
+  if (!lastNutrition) return;
+  const date=fmtDate(document.getElementById('logDate').value), time=nowTime();
+  showStatus('logStatus','Logging...','info');
+  try {
+    const res=await fetch(WORKER+'/log-meal',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({date,time,food:lastFoodDesc,nutrition:lastNutrition})});
+    const d=await res.json();
+    if (!d.ok) throw new Error(d.error);
+    document.getElementById('foodInput').value='';
+    document.getElementById('foodItemsList').classList.add('hidden');
+    document.getElementById('foodItemsDisplay').innerHTML='';
+    document.getElementById('imgPreview').classList.add('hidden');
+    document.getElementById('imgNote').value='';
+    document.querySelector('.img-upload p').textContent='📷 Tap to take photo or choose from gallery';
+    selectedImage=null; document.getElementById('nutritionPreview').classList.add('hidden');
+    lastNutrition=null; lastFoodDesc=null;
+    showStatus('logStatus','Meal logged ✓','success');
+    setTimeout(()=>hideStatus('logStatus'),2000);
+    loadToday();
+  } catch(e){ showStatus('logStatus','Error: '+e.message,'error'); }
+}
+
+async function deleteMeal(id) {
+  if (!confirm('Delete this meal?')) return;
+  try {
+    await fetch(WORKER+'/delete-meal',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({id})});
+    loadToday();
+  } catch(e){ alert('Error: '+e.message); }
+}
+
+// ── Save summary ──────────────────────────────────────────────────────────────
+async function saveSummary() {
+  if (!todayMeals.length) return showStatus('saveStatus','No meals logged yet.','error');
+  const date=fmtDate(document.getElementById('logDate').value);
+  const weight=document.getElementById('weight').value.trim();
+  const steps=document.getElementById('steps').value.trim();
+  const water=document.getElementById('water').value.trim();
+  const totals=todayMeals.reduce((a,m)=>({calories:a.calories+m.calories,protein:a.protein+m.protein,carbs:a.carbs+m.carbs,fat:a.fat+m.fat,fibre:a.fibre+m.fibre}),{calories:0,protein:0,carbs:0,fat:0,fibre:0});
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Saving...';
+  showStatus('saveStatus','Saving...','info');
+  try {
+    const res=await fetch(WORKER+'/save-summary',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({date,weight,steps,water,totals})});
+    const d=await res.json();
+    if (!d.ok) throw new Error(d.error);
+    showStatus('saveStatus','✓ Saved!','success');
+    buildWA(date,weight,steps,water,totals);
+    document.getElementById('waCard').classList.remove('hidden');
+    document.getElementById('waCard').scrollIntoView({behavior:'smooth'});
+  } catch(e){ showStatus('saveStatus','Error: '+e.message,'error'); }
+  btn.disabled=false; btn.innerHTML='📤 Save Daily Summary';
+}
+
+function buildWA(date,weight,steps,water,t) {
+  const sf=steps?(parseFloat(steps)>=1000?(parseFloat(steps)/1000).toFixed(1)+'k':steps):'—';
+  document.getElementById('waText').textContent=
+`📅 ${date} — ${userName}
+
+🔥 Calories: ${Math.round(t.calories)} kcal
+💪 Protein: ${Math.round(t.protein)} g
+🍚 Carbs: ${Math.round(t.carbs)} g
+🧈 Fat: ${Math.round(t.fat)} g
+🌿 Fibre: ${Math.round(t.fibre)} g
+⚖️ Weight: ${weight?weight+' kg':'—'}
+👣 Steps: ${sf}
+💧 Water: ${water?water+' L':'—'}`;
+}
+
+function copyWA() {
+  navigator.clipboard.writeText(document.getElementById('waText').textContent)
+    .then(()=>{showStatus('copyStatus','✓ Copied!','success');setTimeout(()=>hideStatus('copyStatus'),3000);})
+    .catch(()=>showStatus('copyStatus','Select manually.','error'));
+}
+
+// ── Weight Chart ──────────────────────────────────────────────────────────────
+async function loadWeightChart() {
+  showStatus('weightStatus','Loading...','info');
+  try {
+    const res=await fetch(WORKER+'/get-summaries',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({})});
+    const d=await res.json();
+    if (!d.ok) throw new Error(d.error);
+    const data=d.summaries.filter(s=>s.weight&&parseFloat(s.weight)>0);
+    hideStatus('weightStatus');
+    if (!data.length){ showStatus('weightStatus','No weight data yet.','info'); return; }
+    const parsed=data.map(s=>{ const [day,month,year]=s.date.split('/'); return {date:new Date(`${year}-${month}-${day}`),weight:parseFloat(s.weight)}; }).sort((a,b)=>a.date-b.date);
+    const dates=parsed.map(d=>d.date), weights=parsed.map(d=>d.weight);
+    const ma7=weights.map((_,i)=>{ const sl=weights.slice(Math.max(0,i-6),i+1); return sl.reduce((a,b)=>a+b,0)/sl.length; });
+    const n=weights.length, xNums=dates.map(d=>d.getTime());
+    const xMean=xNums.reduce((a,b)=>a+b,0)/n, yMean=weights.reduce((a,b)=>a+b,0)/n;
+    const slope=xNums.reduce((s,x,i)=>s+(x-xMean)*(weights[i]-yMean),0)/xNums.reduce((s,x)=>s+(x-xMean)**2,0);
+    const trendY=xNums.map(x=>slope*x+(yMean-slope*xMean));
+    const first=weights[0],last=weights[weights.length-1],diff=(last-first).toFixed(1);
+    const diffColor=diff<=0?'#3dffa0':'#ff6b6b';
+    const days=Math.max(1,(dates[dates.length-1]-dates[0])/(1000*60*60*24));
+    const weeklyRate=((last-first)/days*7).toFixed(2);
+    document.getElementById('weightStats').innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;">
+        ${[['START',first+'kg'],['CURRENT',last+'kg'],['CHANGE',(diff>0?'+':'')+diff+'kg',diffColor],['MIN',Math.min(...weights)+'kg'],['MAX',Math.max(...weights)+'kg'],['PER WEEK',weeklyRate+'kg',diff<=0?'#3dffa0':'#ff6b6b']].map(([l,v,c])=>`
+        <div style="text-align:center;background:var(--surface);border-radius:8px;padding:8px;">
+          <div style="font-size:0.6rem;color:var(--muted);">${l}</div>
+          <div style="font-size:1rem;font-weight:700;${c?'color:'+c:''}">${v}</div>
+        </div>`).join('')}
+      </div>`;
+    Plotly.newPlot('weightChart',[
+      {x:dates,y:weights,mode:'lines+markers',name:'Weight',line:{color:'#b5f23d',width:2},marker:{color:'#b5f23d',size:6},hovertemplate:'<b>%{x|%d %b %Y}</b><br>%{y:.1f} kg<extra></extra>'},
+      {x:dates,y:ma7,mode:'lines',name:'7-day avg',line:{color:'#3dffa0',width:2,dash:'dash'},hovertemplate:'<b>%{x|%d %b %Y}</b><br>Avg: %{y:.1f} kg<extra></extra>'},
+      {x:dates,y:trendY,mode:'lines',name:'Trend',line:{color:'#ffd93d',width:1,dash:'dot'},hoverinfo:'skip'}
+    ],{paper_bgcolor:'#1c1e1b',plot_bgcolor:'#161714',font:{color:'#e8ead4',family:'DM Mono',size:11},xaxis:{gridcolor:'#2a2c28',tickformat:'%d %b',tickangle:-30},yaxis:{gridcolor:'#2a2c28',ticksuffix:' kg'},legend:{bgcolor:'#1c1e1b',bordercolor:'#2a2c28',x:0,y:1},hovermode:'x unified',margin:{l:50,r:20,t:20,b:60},height:260},
+    {responsive:true,displayModeBar:false});
+  } catch(e){ showStatus('weightStatus','Error: '+e.message,'error'); }
+}
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+async function loadProfile() {
+  try {
+    const res=await fetch(WORKER+'/get-profile',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({})});
+    const d=await res.json();
+    if (d.profile) { showProfileView(d.profile); }
+    else { showProfileForm(false); }
+  } catch(e){ showProfileForm(false); }
+}
+
+function showProfileView(p) {
+  document.getElementById('profileView').classList.remove('hidden');
+  document.getElementById('profileForm').classList.add('hidden');
+  document.getElementById('profileDisplay').innerHTML=`
+    ${[['Age',p.age],['Gender',p.gender],['Height',p.height_cm?p.height_cm+'cm':null],['Target Weight',p.target_weight?p.target_weight+'kg':null],['Goal',p.goal],['Activity',p.activity_level],['Location',p.location],['Notes',p.notes]].filter(([,v])=>v).map(([l,v])=>`
+    <div class="profile-row"><span class="profile-label">${l}</span><span class="profile-val">${v}</span></div>`).join('')}`;
+  // Pre-fill form for editing
+  if(p.age) document.getElementById('p_age').value=p.age;
+  if(p.gender) document.getElementById('p_gender').value=p.gender;
+  if(p.height_cm) document.getElementById('p_height').value=p.height_cm;
+  if(p.target_weight) document.getElementById('p_target').value=p.target_weight;
+  if(p.goal) document.getElementById('p_goal').value=p.goal;
+  if(p.activity_level) document.getElementById('p_activity').value=p.activity_level;
+  if(p.location) document.getElementById('p_location').value=p.location;
+  if(p.notes) document.getElementById('p_notes').value=p.notes;
+}
+
+function showProfileForm(isEdit) {
+  document.getElementById('profileView').classList.add('hidden');
+  document.getElementById('profileForm').classList.remove('hidden');
+  document.getElementById('cancelProfileBtn').style.display=isEdit?'block':'none';
+}
+
+async function saveProfile() {
+  const profile={
+    age:document.getElementById('p_age').value||null,
+    gender:document.getElementById('p_gender').value||null,
+    height_cm:document.getElementById('p_height').value||null,
+    target_weight:document.getElementById('p_target').value||null,
+    goal:document.getElementById('p_goal').value||null,
+    activity_level:document.getElementById('p_activity').value||null,
+    location:document.getElementById('p_location').value||null,
+    notes:document.getElementById('p_notes').value||null
+  };
+  showStatus('profileStatus','Saving...','info');
+  try {
+    const res=await fetch(WORKER+'/save-profile',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify(profile)});
+    const d=await res.json();
+    if (!d.ok) throw new Error(d.error);
+    showStatus('profileStatus','✓ Profile saved!','success');
+    setTimeout(()=>loadProfile(),1000);
+  } catch(e){ showStatus('profileStatus','Error: '+e.message,'error'); }
+}
+
+async function deleteProfile() {
+  if (!confirm('Delete your profile? This cannot be undone.')) return;
+  await fetch(WORKER+'/delete-profile',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({})});
+  loadProfile();
+}
+
+// ── Coach ─────────────────────────────────────────────────────────────────────
+async function loadProfileSummary() {
+  const res=await fetch(WORKER+'/get-profile',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({})});
+  const d=await res.json();
+  const el=document.getElementById('profileSummaryForCoach');
+  if (d.profile) {
+    const p=d.profile;
+    el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:0.72rem;color:var(--muted);margin-bottom:0;">
+      👤 ${p.gender||'?'}, ${p.age||'?'}y, ${p.height_cm||'?'}cm · 🎯 ${p.goal||'?'} · 📍 ${p.location||'?'}
+      ${p.notes?`<br>📝 ${p.notes}`:''}
+    </div>`;
+  } else {
+    el.innerHTML=`<div style="font-size:0.72rem;color:var(--danger);margin-bottom:0;">⚠️ No profile set up — <a href="#" onclick="showPage('profile')" style="color:var(--accent);">add your profile</a> for personalised advice.</div>`;
+  }
+}
+
+async function getCoachAdvice() {
+  const btn=document.getElementById('coachBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner spinner-white"></span>Analysing...';
+  showStatus('coachStatus','AI is reviewing your history...','info');
+  document.getElementById('coachResponse').classList.add('hidden');
+  try {
+    const res=await fetch(WORKER+'/ai-coach',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({})});
+    const d=await res.json();
+    if (!d.ok) throw new Error(d.error);
+    hideStatus('coachStatus');
+    document.getElementById('coachResponse').textContent=d.advice;
+    document.getElementById('coachResponse').classList.remove('hidden');
+  } catch(e){ showStatus('coachStatus','Error: '+e.message,'error'); }
+  btn.disabled=false; btn.innerHTML='✨ Analyse My Data';
+}
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+async function loadAdminUsers() {
+  try {
+    const res=await fetch(WORKER+'/admin/list-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:userCode})});
+    const d=await res.json();
+    if (!d.ok) return;
+    const list=document.getElementById('adminUserList');
+    list.innerHTML=d.users.map(u=>`
+      <div class="user-row">
+        <div class="user-info">
+          <div class="user-name">${u.name}</div>
+          <div class="user-code">Code: ${u.code}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="${u.is_active?'user-status-active':'user-status-inactive'}">${u.is_active?'✓ Active':'✗ Inactive'}</span>
+          ${u.is_active?`<button class="btn btn-danger btn-sm" onclick="adminRemoveUser('${u.code}','${u.name}')">Remove</button>`:''}
+        </div>
+      </div>`).join('');
+  } catch(e){ document.getElementById('adminUserList').innerHTML='<div style="color:var(--danger);font-size:0.73rem;">Error loading users</div>'; }
+}
+
+async function adminAddUser() {
+  const name=document.getElementById('admin_name').value.trim();
+  const code=document.getElementById('admin_code').value.trim();
+  if (!name||!code) return showStatus('adminAddStatus','Name and code required.','error');
+  showStatus('adminAddStatus','Adding...','info');
+  try {
+    const res=await fetch(WORKER+'/admin/add-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:userCode,name,user_code:code})});
+    const d=await res.json();
+    if (!d.ok) throw new Error(d.error);
+    showStatus('adminAddStatus',`✓ ${name} added!`,'success');
+    document.getElementById('admin_name').value='';
+    document.getElementById('admin_code').value='';
+    loadAdminUsers();
+  } catch(e){ showStatus('adminAddStatus','Error: '+e.message,'error'); }
+}
+
+async function adminRemoveUser(code, name) {
+  if (!confirm(`Remove ${name}? They won't be able to log in.`)) return;
+  await fetch(WORKER+'/admin/remove-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:userCode,user_code:code})});
+  loadAdminUsers();
+}
+
+async function adminWipeDb() {
+  if (!confirm('⚠️ This will delete ALL meal and summary data for everyone. Are you sure?')) return;
+  if (!confirm('Are you REALLY sure? This cannot be undone.')) return;
+  const res=await fetch(WORKER+'/admin/wipe-db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:userCode})});
+  const d=await res.json();
+  showStatus('adminWipeStatus', d.ok?'✓ All data wiped':'Error: '+d.error, d.ok?'success':'error');
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+async function exportData() {
+  showStatus('exportStatus','Fetching...','info');
+  try {
+    const res=await fetch(WORKER+'/export',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify({})});
+    const d=await res.json();
+    if (!d.ok) throw new Error(d.error);
+    const wb=XLSX.utils.book_new();
+    const mealsData=[['Date','Time','Food','Calories','Protein(g)','Carbs(g)','Fat(g)','Fibre(g)']];
+    d.meals.forEach(m=>mealsData.push([m.date,m.time,m.food,m.calories,m.protein,m.carbs,m.fat,m.fibre]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(mealsData),'Meal Log');
+    const summaryData=[['Date','Weight(kg)','Calories','Protein(g)','Carbs(g)','Fat(g)','Fibre(g)','Steps','Water(L)']];
+    d.summaries.forEach(s=>summaryData.push([s.date,s.weight,s.calories,s.protein,s.carbs,s.fat,s.fibre,s.steps,s.water]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summaryData),'Daily Summary');
+    XLSX.writeFile(wb,`NutriLog_${userName}_${todayStr()}.xlsx`);
+    showStatus('exportStatus','✓ Downloaded!','success');
+  } catch(e){ showStatus('exportStatus','Error: '+e.message,'error'); }
+}
+
+function showStatus(id,msg,type){const e=document.getElementById(id);if(!e)return;e.textContent=msg;e.className='status '+type;}
+function hideStatus(id){const e=document.getElementById(id);if(e)e.className='status';}
+</script>
+</body>
+</html>

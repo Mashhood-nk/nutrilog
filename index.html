@@ -445,7 +445,7 @@ function toggleSettings(){ document.getElementById('settingsCard').classList.tog
 function setAPI(api){ preferredAPI=api; localStorage.setItem('nl_api',api); updateAPIButtons(); }
 
 function updateAPIButtons() {
-  const notes = { openai:'GPT-5.4-mini (simple) → GPT-5.4 (vague/photos)', claude:'Haiku (simple) → Sonnet (vague/photos)', gemini:'Gemini 2.0 Flash' };
+  const notes = { openai:'GPT-5.5 — best accuracy', claude:'Claude Sonnet 4.6 — great for South Asian food', gemini:'Gemini 2.0 Flash — fast and free tier' };
   ['openai','claude','gemini'].forEach(a => {
     const btn = document.getElementById('api-'+a);
     if(!btn) return;
@@ -572,9 +572,10 @@ async function analyseFood() {
     const n=lastNutrition;
     let badge='⚡ AI';
     if(d.model_used){
-      if(d.model_used.includes('gpt-5.4-mini')) badge='⚡ GPT-5.4-mini';
-      else if(d.model_used.includes('gpt-5.4')) badge='🧠 GPT-5.4';
-      else if(d.model_used.includes('sonnet')) badge='🧠 Sonnet';
+      if(d.model_used.includes('gpt-5.5')) badge='⚡ GPT-5.5';
+      else if(d.model_used.includes('gpt-5.4-mini')) badge='⚡ GPT-5.4-mini';
+      else if(d.model_used.includes('gpt-5.4')) badge='⚡ GPT-5.4';
+      else if(d.model_used.includes('sonnet')) badge='🟠 Sonnet 4.6';
       else if(d.model_used.includes('haiku')) badge='⚡ Haiku';
       else if(d.model_used.includes('gemini')) badge='🔵 Gemini';
     }

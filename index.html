@@ -561,21 +561,8 @@ async function analyseFood() {
   } else {
     const rawFood = document.getElementById('foodInput').value.trim();
     if (!rawFood){ showStatus('analyseStatus','Enter what you ate.','error'); btn.disabled=false; btn.innerHTML='🔍 Analyse Nutrition'; return; }
-
-    // Split by newlines or commas — simple browser-side splitting, no API needed
-    let items = rawFood.split(/\n|,/).map(s=>s.trim()).filter(s=>s.length>0);
-    if (!items.length) items = [rawFood];
-
-    // Show detected items
-    const listEl = document.getElementById('foodItemsList');
-    const displayEl = document.getElementById('foodItemsDisplay');
-    if (items.length > 1) {
-      listEl.classList.remove('hidden');
-      displayEl.innerHTML = items.map((item,i)=>`<div style="padding:3px 0;font-size:0.75rem;border-bottom:1px solid var(--border);"><span style="color:var(--muted);margin-right:6px;">${i+1}.</span>${item}</div>`).join('');
-    }
-
-    const formattedFood = items.map((item,i) => `${i+1}. ${item}`).join('\n');
-    body={food:formattedFood,preferred_api:preferredAPI};
+    // Send raw text directly — AI splits and estimates in one call
+    body={food:rawFood,preferred_api:preferredAPI};
   }
   try {
     const res=await fetch(WORKER+'/analyse',{method:'POST',headers:{'Content-Type':'application/json','x-user-code':userCode},body:JSON.stringify(body)});
